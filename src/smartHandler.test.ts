@@ -266,7 +266,9 @@ function getExpectedUserIdentity(decodedAccessToken: any): any {
         );
     }
     if (decodedAccessToken?.patientOrgs) {
-        expectedUserIdentity.patientOrgs = decodedAccessToken.patientOrgs.map((orgRef: string) => getFhirResource(orgRef, apiUrl));
+        expectedUserIdentity.patientOrgs = decodedAccessToken.patientOrgs.map((orgRef: string) =>
+            getFhirResource(orgRef, apiUrl),
+        );
     }
     expectedUserIdentity.usableScopes = usableScopes;
     return expectedUserIdentity;
@@ -366,16 +368,16 @@ describe('verifyAccessToken', () => {
         ],
         [
             'user_patientOrgs_claim',
-            { accessToken: 'fake', operation: 'search-type', resourceType: 'Observation'},
+            { accessToken: 'fake', operation: 'search-type', resourceType: 'Observation' },
             { ...baseAccessNoScopes, scp: 'user/*.read', ...patientFhirUser, patientOrgs: [organizationId] },
             true,
         ],
         [
             'user_invalid_patientOrgs_claim',
-            { accessToken: 'fake', operation: 'search-type', resourceType: 'Observation'},
+            { accessToken: 'fake', operation: 'search-type', resourceType: 'Observation' },
             { ...baseAccessNoScopes, scp: 'user/*.read', ...patientFhirUser, patientOrgs: organizationId },
             false,
-        ], 
+        ],
         [
             'user_manyWrite_Read',
             { accessToken: 'fake', operation: 'read', resourceType: 'Patient', id: patientId },
