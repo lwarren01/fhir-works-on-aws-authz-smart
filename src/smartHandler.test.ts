@@ -18,6 +18,7 @@ import {
     AuthorizationBundleRequest,
     GetSearchFilterBasedOnIdentityRequest,
 } from 'fhir-works-on-aws-interface';
+import clone from 'lodash/clone';
 import cloneDeep from 'lodash/cloneDeep';
 
 import * as smartAuthorizationHelper from './smartAuthorizationHelper';
@@ -59,6 +60,7 @@ const apiUrl = 'https://fhir.server.com/dev';
 const id = 'id';
 const patientId = `Patient/${id}`;
 const practitionerId = `Practitioner/${id}`;
+const organizationId = `Organization/${id}`;
 const patientIdentity = `${apiUrl}/${patientId}`;
 const practitionerIdentity = `${apiUrl}/${practitionerId}`;
 const externalPractitionerIdentity = `${apiUrl}/test/${practitionerId}`;
@@ -243,7 +245,7 @@ describe('constructor', () => {
 });
 
 function getExpectedUserIdentity(decodedAccessToken: any): any {
-    const expectedUserIdentity = decodedAccessToken;
+    const expectedUserIdentity = clone(decodedAccessToken);
     expectedUserIdentity.scopes = getScopes(decodedAccessToken.scp);
     const usableScopes = expectedUserIdentity.scopes.filter(
         (scope: string) =>
@@ -262,6 +264,9 @@ function getExpectedUserIdentity(decodedAccessToken: any): any {
             decodedAccessToken.ext.launch_response_patient,
             apiUrl,
         );
+    }
+    if (decodedAccessToken?.patientOrgs) {
+        expectedUserIdentity.patientOrgs = decodedAccessToken.patientOrgs.map((orgRef: string) => getFhirResource(orgRef, apiUrl));
     }
     expectedUserIdentity.usableScopes = usableScopes;
     return expectedUserIdentity;
@@ -359,6 +364,18 @@ describe('verifyAccessToken', () => {
             { ...baseAccessNoScopes, scp: 'user/*.read', ...patientFhirUser },
             true,
         ],
+        [
+            'user_patientOrgs_claim',
+            { accessToken: 'fake', operation: 'search-type', resourceType: 'Observation'},
+            { ...baseAccessNoScopes, scp: 'user/*.read', ...patientFhirUser, patientOrgs: [organizationId] },
+            true,
+        ],
+        [
+            'user_invalid_patientOrgs_claim',
+            { accessToken: 'fake', operation: 'search-type', resourceType: 'Observation'},
+            { ...baseAccessNoScopes, scp: 'user/*.read', ...patientFhirUser, patientOrgs: organizationId },
+            false,
+        ], 
         [
             'user_manyWrite_Read',
             { accessToken: 'fake', operation: 'read', resourceType: 'Patient', id: patientId },
